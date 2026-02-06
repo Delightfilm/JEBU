@@ -5,6 +5,7 @@ import TideLevelGraph from "@/components/TideLevelGraph";
 import TimetableCard from "@/components/TimetableCard";
 import MonthlyTimetable from "@/components/MonthlyTimetable";
 import TideGuide from "@/components/TideGuide";
+import VisitorCounter from "@/components/VisitorCounter";
 import { getPassStatus, getWeekEntries } from "@/data/timetable";
 
 const Index = () => {
@@ -53,6 +54,11 @@ const Index = () => {
           {/* 물때 가이드 */}
           <section className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
             <TideGuide />
+          </section>
+
+          {/* 방문자 수 */}
+          <section className="animate-fade-in" style={{ animationDelay: "0.22s" }}>
+            <VisitorCounter />
           </section>
 
           {/* 푸터 정보 */}
