@@ -23,6 +23,10 @@ const VisitorCounter = () => {
       const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
       const path = typeof window !== "undefined" ? window.location.pathname : "";
 
+      const toSend = { user_ip: ip, user_info: userAgent, page_path: path };
+      const isEmpty = !toSend.user_ip || !toSend.user_info || toSend.page_path === undefined;
+      console.log("[VisitorCounter] RPC 전송 데이터:", toSend, isEmpty ? "(일부 비어 있음)" : "(값 있음)");
+
       const result = await incrementVisitor(ip, userAgent, path);
       if (cancelled) return;
       if (result) {

@@ -17,11 +17,13 @@ export async function incrementVisitor(
   page_path: string
 ): Promise<VisitorCounts | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase.rpc("increment_visitor", {
-    user_ip,
-    user_info,
-    page_path,
-  });
+  const payload = { user_ip, user_info, page_path };
+  const hasEmpty =
+    payload.user_ip === "" ||
+    payload.user_info === "" ||
+    payload.page_path === "";
+  console.log("[VisitorCounter] increment_visitor payload:", payload, hasEmpty ? "(일부 비어 있음)" : "(값 있음)");
+  const { data, error } = await supabase.rpc("increment_visitor", payload);
   if (error) {
     console.warn("[VisitorCounter] increment_visitor error:", error.message);
     return null;
