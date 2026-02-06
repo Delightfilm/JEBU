@@ -26,20 +26,19 @@ const Header = () => {
   const ThemeIcon = !mounted ? Monitor : theme === "dark" ? Moon : theme === "light" ? Sun : Monitor;
 
   return (
-    <header className="border-b border-border bg-card/80 backdrop-blur-sm">
-      <div className="container py-4">
-        <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+    <header className="relative border-b border-border bg-card/80 backdrop-blur-sm">
+      <div className="container relative py-4">
+        <div className="flex flex-row items-center justify-between gap-3">
+          <div className="flex min-w-0 shrink items-center gap-2">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
               <MapPin className="h-5 w-5 text-primary" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold">제부도 바닷길</h1>
-              <p className="text-xs text-muted-foreground">실시간 통행 정보</p>
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-bold">제부도 바닷길</h1>
+              <p className="truncate text-xs text-muted-foreground">실시간 통행 정보</p>
             </div>
           </div>
-
-          <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <div className="flex shrink-0 flex-row items-center gap-2 sm:gap-3">
             {mounted && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -47,7 +46,7 @@ const Header = () => {
                     <ThemeIcon className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" sideOffset={8}>
                   <DropdownMenuRadioGroup value={theme ?? "system"} onValueChange={(v) => setTheme(v)}>
                     <DropdownMenuRadioItem value="light">
                       <Sun className="mr-2 h-4 w-4" />
@@ -65,7 +64,7 @@ const Header = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            <p className="text-sm font-medium text-foreground">{formattedDate}</p>
+            <p className="text-xs font-medium text-foreground sm:text-sm">{formattedDate}</p>
           </div>
         </div>
       </div>
