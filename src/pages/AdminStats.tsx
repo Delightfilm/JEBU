@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import UAParser from "ua-parser-js";
+import { UAParser } from "ua-parser-js";
 import { supabase } from "@/lib/supabase";
 
 const ADMIN_PASSWORD = "1234";
@@ -38,24 +38,28 @@ function formatDateTime(iso: string) {
   });
 }
 
-/** user_agent를 파싱해 기기 종류와 OS를 반환 */
+/** user_agent를 파싱해 기기 종류와 OS를 반환 (예외 시 "-" 반환) */
 function parseUserAgent(ua: string | null): { deviceType: string; os: string } {
   if (!ua || !ua.trim()) return { deviceType: "-", os: "-" };
-  const parser = new UAParser(ua);
-  const result = parser.getResult();
-  const rawType = result.device.type;
-  const deviceType =
-    rawType === "mobile"
-      ? "Mobile"
-      : rawType === "tablet"
-        ? "Tablet"
-        : rawType === "wearable"
-          ? "Wearable"
-          : rawType === "smarttv"
-            ? "Smart TV"
-            : "Desktop";
-  const os = result.os.name ?? "-";
-  return { deviceType, os };
+  try {
+    const parser = new UAParser(ua);
+    const result = parser.getResult();
+    const rawType = result.device.type;
+    const deviceType =
+      rawType === "mobile"
+        ? "Mobile"
+        : rawType === "tablet"
+          ? "Tablet"
+          : rawType === "wearable"
+            ? "Wearable"
+            : rawType === "smarttv"
+              ? "Smart TV"
+              : "Desktop";
+    const os = result.os.name ?? "-";
+    return { deviceType, os };
+  } catch {
+    return { deviceType: "-", os: "-" };
+  }
 }
 
 async function fetchVisitorLogs(): Promise<VisitorLog[]> {
