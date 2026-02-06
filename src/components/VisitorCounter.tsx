@@ -1,61 +1,54 @@
 import { useState, useEffect } from "react";
-
-const STORAGE_KEYS = {
-  total: "jebu_visitor_total",
-  date: "jebu_visitor_date",
-  today: "jebu_visitor_today",
-} as const;
-
-function getTodayKey(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function loadCounts(): { today: number; total: number } {
-  if (typeof window === "undefined") return { today: 0, total: 0 };
-  const todayKey = getTodayKey();
-  const storedTotal = localStorage.getItem(STORAGE_KEYS.total);
-  const storedDate = localStorage.getItem(STORAGE_KEYS.date);
-  const storedToday = localStorage.getItem(STORAGE_KEYS.today);
-
-  let total = storedTotal ? parseInt(storedTotal, 10) : 0;
-  let today = 0;
-
-  if (storedDate === todayKey && storedToday) {
-    today = parseInt(storedToday, 10);
-  }
-
-  total += 1;
-  today += 1;
-
-  localStorage.setItem(STORAGE_KEYS.total, String(total));
-  localStorage.setItem(STORAGE_KEYS.date, todayKey);
-  localStorage.setItem(STORAGE_KEYS.today, String(today));
-
-  return { today, total };
-}
+import { incrementVisitor } from "@/lib/supabase";
 
 const VisitorCounter = () => {
   const [counts, setCounts] = useState<{ today: number; total: number } | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    setCounts(loadCounts());
+    let cancelled = false;
+
+    async function run() {
+      const result = await incrementVisitor();
+      if (cancelled) return;
+      if (result) {
+        setCounts(result);
+        setError(false);
+      } else {
+        setError(true);
+        setCounts({ today: 0, total: 0 });
+      }
+    }
+
+    run();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  if (counts === null) return null;
+  if (counts === null && !error) return null;
 
   return (
     <div className="rounded-xl border border-[#e0e0e0] bg-white px-4 py-3 shadow-sm">
       <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
         <span className="text-foreground">
           <span className="text-muted-foreground">오늘</span>{" "}
-          <span className="font-bold tabular-nums">{counts.today.toLocaleString()}</span>
+          <span className="font-bold tabular-nums">
+            {(counts?.today ?? 0).toLocaleString()}
+          </span>
         </span>
         <span className="text-foreground">
           <span className="text-muted-foreground">전체</span>{" "}
-          <span className="font-bold tabular-nums">{counts.total.toLocaleString()}</span>
+          <span className="font-bold tabular-nums">
+            {(counts?.total ?? 0).toLocaleString()}
+          </span>
         </span>
       </div>
+      {error && (
+        <p className="mt-1 text-center text-[10px] text-muted-foreground">
+          Supabase 미설정 또는 연결 실패
+        </p>
+      )}
     </div>
   );
 };
