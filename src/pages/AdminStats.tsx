@@ -11,6 +11,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   Table,
   TableBody,
   TableCell,
@@ -23,7 +29,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { UAParser } from "ua-parser-js";
 import { supabase } from "@/lib/supabase";
 
-const ADMIN_PASSWORD = "1234";
+const ADMIN_PASSWORD = "rlawnghks0721@";
 
 export type VisitorLog = {
   id: string;
@@ -128,6 +134,39 @@ export default function AdminStats() {
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [logs]);
 
+  /** IP별 그룹, 대표 시간 = 해당 IP의 최신 접속 시간, 전체는 최신 접속 순 내림차순 */
+  const groupedByIp = useMemo(() => {
+    const map = new Map<string, VisitorLog[]>();
+    for (const log of logs) {
+      const key = log.ip_address ?? "unknown";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(log);
+    }
+    const groups: {
+      ip: string;
+      records: VisitorLog[];
+      latestAt: string;
+      latestDevice: string;
+      count: number;
+    }[] = [];
+    for (const [ip, records] of map) {
+      const sorted = [...records].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      const latest = sorted[0];
+      const { deviceType } = parseUserAgent(latest?.user_agent ?? null);
+      groups.push({
+        ip,
+        records: sorted,
+        latestAt: latest?.created_at ?? "",
+        latestDevice: deviceType,
+        count: sorted.length,
+      });
+    }
+    groups.sort((a, b) => new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime());
+    return groups;
+  }, [logs]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -214,7 +253,7 @@ export default function AdminStats() {
 
         <Card>
           <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+            <div className="space-y-3">
               <CardTitle>방문 로그</CardTitle>
               <CardDescription>
                 최신순 · {yearMonth.slice(0, 4)}년 {Number(yearMonth.slice(5))}월 {logs.length}건
@@ -265,43 +304,53 @@ export default function AdminStats() {
               <p className="text-muted-foreground">기록이 없습니다.</p>
             )}
             {!isLoading && !fetchError && logs.length > 0 && (
-              <div className="overflow-auto rounded-md border">
-                <Table>
-                    <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap">접속 시간</TableHead>
-                      <TableHead className="whitespace-nowrap">IP</TableHead>
-                      <TableHead className="whitespace-nowrap">기기</TableHead>
-                      <TableHead className="whitespace-nowrap">OS</TableHead>
-                      <TableHead className="whitespace-nowrap">경로</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {logs.map((row) => {
-                      const { deviceType, os } = parseUserAgent(row.user_agent);
-                      return (
-                        <TableRow key={row.id}>
-                          <TableCell className="whitespace-nowrap font-mono text-xs">
-                            {formatDateTime(row.created_at)}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap font-mono text-xs">
-                            {row.ip_address ?? "-"}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap text-xs" title={row.user_agent ?? ""}>
-                            {deviceType}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap text-xs" title={row.user_agent ?? ""}>
-                            {os}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground">
-                            {row.path ?? "-"}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+              <Accordion type="single" collapsible className="w-full rounded-md border">
+                {groupedByIp.map((group) => (
+                  <AccordionItem key={group.ip} value={group.ip} className="border-b last:border-b-0">
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline [&[data-state=open]>svg]:rotate-180">
+                      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-left">
+                        <span className="font-mono text-sm font-medium">{group.ip}</span>
+                        <span className="text-xs text-muted-foreground">{group.latestDevice}</span>
+                        <span className="text-xs text-muted-foreground">총 {group.count}회</span>
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {formatDateTime(group.latestAt)}
+                        </span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-3 pt-0">
+                      <div className="overflow-auto rounded border bg-muted/30">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="whitespace-nowrap text-xs">접속 시간</TableHead>
+                              <TableHead className="whitespace-nowrap text-xs">기기</TableHead>
+                              <TableHead className="whitespace-nowrap text-xs">OS</TableHead>
+                              <TableHead className="whitespace-nowrap text-xs">경로</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {group.records.map((row) => {
+                              const { deviceType, os } = parseUserAgent(row.user_agent);
+                              return (
+                                <TableRow key={row.id}>
+                                  <TableCell className="whitespace-nowrap font-mono text-xs">
+                                    {formatDateTime(row.created_at)}
+                                  </TableCell>
+                                  <TableCell className="whitespace-nowrap text-xs">{deviceType}</TableCell>
+                                  <TableCell className="whitespace-nowrap text-xs">{os}</TableCell>
+                                  <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground">
+                                    {row.path ?? "-"}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             )}
           </CardContent>
         </Card>
