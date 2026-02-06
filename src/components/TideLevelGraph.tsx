@@ -130,7 +130,7 @@ const TideLevelGraph = () => {
         <div className="flex items-center gap-2">
           <Waves className="h-5 w-5 text-sky-600" aria-hidden />
           <h3 className="text-[15px] font-semibold text-[#1D1D1F]">
-            현재 수위
+            제부도 현재 수위
           </h3>
         </div>
       </div>

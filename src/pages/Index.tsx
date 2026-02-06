@@ -4,7 +4,6 @@ import StatusDisplay from "@/components/StatusDisplay";
 import TideLevelGraph from "@/components/TideLevelGraph";
 import TimetableCard from "@/components/TimetableCard";
 import MonthlyTimetable from "@/components/MonthlyTimetable";
-import TideForecastCard from "@/components/TideForecastCard";
 import TideGuide from "@/components/TideGuide";
 import { getPassStatus, getWeekEntries } from "@/data/timetable";
 
@@ -49,11 +48,6 @@ const Index = () => {
           {/* 월별 시간표 */}
           <section className="animate-fade-in" style={{ animationDelay: "0.15s" }}>
             <MonthlyTimetable />
-          </section>
-
-          {/* 2026년 2월 조석 예보 (월별 시간표 밑) */}
-          <section className="animate-fade-in" style={{ animationDelay: "0.18s" }}>
-            <TideForecastCard />
           </section>
 
           {/* 물때 가이드 */}
