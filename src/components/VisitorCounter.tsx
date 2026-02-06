@@ -9,7 +9,21 @@ const VisitorCounter = () => {
     let cancelled = false;
 
     async function run() {
-      const result = await incrementVisitor();
+      let ip = "unknown";
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        if (res.ok) {
+          const json = (await res.json()) as { ip?: string };
+          if (json.ip) ip = json.ip;
+        }
+      } catch {
+        // IP 조회 실패 시 'unknown' 유지
+      }
+
+      const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
+      const path = typeof window !== "undefined" ? window.location.pathname : "";
+
+      const result = await incrementVisitor(ip, userAgent, path);
       if (cancelled) return;
       if (result) {
         setCounts(result);

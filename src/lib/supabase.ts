@@ -11,9 +11,17 @@ export const supabase =
 export type VisitorCounts = { today: number; total: number };
 
 /** 방문자 수 +1 후 최신 오늘/전체 카운트 반환. Supabase 미설정 시 null */
-export async function incrementVisitor(): Promise<VisitorCounts | null> {
+export async function incrementVisitor(
+  user_ip: string,
+  user_info: string,
+  page_path: string
+): Promise<VisitorCounts | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase.rpc("increment_visitor");
+  const { data, error } = await supabase.rpc("increment_visitor", {
+    user_ip,
+    user_info,
+    page_path,
+  });
   if (error) {
     console.warn("[VisitorCounter] increment_visitor error:", error.message);
     return null;
