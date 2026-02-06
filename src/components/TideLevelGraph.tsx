@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 import { Waves } from "lucide-react";
 import {
   AreaChart,
@@ -58,11 +59,24 @@ function interpolateLevel(
 }
 
 const TideLevelGraph = () => {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   const [curveData, setCurveData] = useState(() => getTideCurveData());
   const [status, setStatus] = useState(() => getCurrentTideStatus());
   const [timeUntil, setTimeUntil] = useState(() => getTimeUntilNextTide());
   const [now, setNow] = useState(() => new Date());
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const gridStroke = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
+  const axisStroke = isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.25)";
+  const tickFill = isDark ? "rgba(255,255,255,0.9)" : "#1D1D1F";
+  const tooltipBg = isDark ? "hsl(var(--card))" : "#ffffff";
+  const tooltipBorder = isDark ? "hsl(var(--border))" : "#e5e7eb";
+  const tooltipText = isDark ? "hsl(var(--card-foreground))" : "#1D1D1F";
+  const cursorStroke = isDark ? "rgba(148,163,184,0.6)" : "#94a3b8";
+  const dotBg = isDark ? "hsl(var(--card))" : "white";
+  const dotStroke = isDark ? "hsl(var(--primary))" : "rgb(3, 105, 161)";
+  const dotRing = isDark ? "hsl(var(--border))" : "white";
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -119,15 +133,12 @@ const TideLevelGraph = () => {
   })();
 
   return (
-    <div
-      className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm"
-      style={{ boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.05)" }}
-    >
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       {/* 헤더 */}
-      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3.5">
+      <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
         <div className="flex items-center gap-2">
-          <Waves className="h-5 w-5 text-sky-600" aria-hidden />
-          <h3 className="text-[15px] font-semibold text-[#1D1D1F]">
+          <Waves className="h-5 w-5 text-primary" aria-hidden />
+          <h3 className="text-[15px] font-semibold text-foreground">
             제부도 현재 수위
           </h3>
         </div>
@@ -135,17 +146,17 @@ const TideLevelGraph = () => {
 
       {/* 상단 텍스트 정보 (애플 날씨 앱 스타일) */}
       <div className="px-5 pt-4 pb-1">
-        <p className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">
+        <p className="text-[28px] font-semibold tracking-tight text-foreground">
           {status.levelLabel}
         </p>
-        <p className="mt-1.5 text-[13px] text-[#1D1D1F]/70">
+        <p className="mt-1.5 text-[13px] text-muted-foreground">
           다음 만조까지{" "}
-          <span className="font-medium text-[#1D1D1F]">
+          <span className="font-medium text-foreground">
             {timeUntil.nextHighText}
           </span>
           {" · "}
           다음 간조까지{" "}
-          <span className="font-medium text-[#1D1D1F]">
+          <span className="font-medium text-foreground">
             {timeUntil.nextLowText}
           </span>
         </p>
@@ -153,7 +164,7 @@ const TideLevelGraph = () => {
 
       {/* 그래프 영역 */}
       <div className="px-4 pb-4 pt-2">
-        <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+        <div className="rounded-xl border border-border bg-muted/50 p-3">
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart
               data={chartData}
@@ -185,7 +196,7 @@ const TideLevelGraph = () => {
               </defs>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="rgba(0,0,0,0.06)"
+                stroke={gridStroke}
                 vertical={true}
                 horizontal={true}
               />
@@ -195,18 +206,18 @@ const TideLevelGraph = () => {
                 domain={[0, 24 * 60]}
                 tickFormatter={formatTimeLabel}
                 ticks={[0, 360, 720, 1080]}
-                stroke="rgba(0,0,0,0.25)"
-                tick={{ fill: "#1D1D1F", fontSize: 11, opacity: 0.7 }}
+                stroke={axisStroke}
+                tick={{ fill: tickFill, fontSize: 11, opacity: 0.7 }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis domain={yDomain} hide />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#ffffff",
-                  border: "1px solid #e5e7eb",
+                  backgroundColor: tooltipBg,
+                  border: `1px solid ${tooltipBorder}`,
                   borderRadius: "10px",
-                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.08)",
+                  boxShadow: isDark ? "0 4px 6px -1px rgb(0 0 0 / 0.3)" : "0 4px 6px -1px rgb(0 0 0 / 0.08)",
                 }}
                 labelFormatter={(minutes: number) => {
                   const snapped = snapTo30(minutes);
@@ -215,9 +226,9 @@ const TideLevelGraph = () => {
                   return `${h}시 ${m}분`;
                 }}
                 formatter={(value: number) => [`${cmToM(value)}m`, "수위"]}
-                labelStyle={{ color: "#1D1D1F", fontSize: 13 }}
-                itemStyle={{ color: "#1D1D1F", fontSize: 13 }}
-                cursor={{ stroke: "#94a3b8", strokeWidth: 1, strokeDasharray: "3 2" }}
+                labelStyle={{ color: tooltipText, fontSize: 13 }}
+                itemStyle={{ color: tooltipText, fontSize: 13 }}
+                cursor={{ stroke: cursorStroke, strokeWidth: 1, strokeDasharray: "3 2" }}
               />
               <Area
                 type="monotone"
@@ -236,14 +247,14 @@ const TideLevelGraph = () => {
                     <g key="current" transform={`translate(${cx},${cy})`}>
                       <circle
                         r={8}
-                        fill="white"
+                        fill={dotBg}
                         fillOpacity={0.5}
                         filter="url(#currentDotGlow)"
                       />
                       <circle
                         r={4}
-                        fill="rgb(3, 105, 161)"
-                        stroke="white"
+                        fill={dotStroke}
+                        stroke={dotRing}
                         strokeWidth={1.2}
                         strokeOpacity={0.9}
                       />
@@ -257,11 +268,11 @@ const TideLevelGraph = () => {
 
           {/* 통행 가능/불가 타임라인 (수위 그래프 바로 아래) */}
           <div className="mt-1">
-            <p className="mb-1 text-[11px] font-medium text-[#1D1D1F]/60">
+            <p className="mb-1 text-[11px] font-medium text-muted-foreground">
               통행시간
             </p>
             <div className="relative w-full">
-              <div className="flex h-3 w-full overflow-hidden rounded-lg border border-gray-100 bg-gray-50">
+              <div className="flex h-3 w-full overflow-hidden rounded-lg border border-border bg-muted/50">
                 {timelineSegments.map((seg, i) => (
                   <div
                     key={i}
@@ -283,7 +294,7 @@ const TideLevelGraph = () => {
               </div>
               {/* 현재 시각 위치 초록 점 */}
               <span
-                className="absolute top-1/2 z-10 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm"
+                className="absolute top-1/2 z-10 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-border shadow-sm"
                 style={{
                   left: `${(currentMinutes / (24 * 60)) * 100}%`,
                   backgroundColor: "hsl(var(--status-open))",
@@ -292,7 +303,7 @@ const TideLevelGraph = () => {
                 aria-hidden
               />
             </div>
-            <div className="relative mt-1 h-4 w-full text-[10px] text-[#1D1D1F]/50">
+            <div className="relative mt-1 h-4 w-full text-[10px] text-muted-foreground">
               <span className="absolute left-[25%] -translate-x-1/2">오전 6시</span>
               <span className="absolute left-1/2 -translate-x-1/2">오후 12시</span>
               <span className="absolute left-[75%] -translate-x-1/2">오후 6시</span>
@@ -319,8 +330,8 @@ const TideLevelGraph = () => {
       </div>
 
       {/* 푸터 */}
-      <div className="border-t border-gray-100 px-5 py-2.5">
-        <p className="text-[11px] text-[#1D1D1F]/55">
+      <div className="border-t border-border px-5 py-2.5">
+        <p className="text-[11px] text-muted-foreground">
           ※ 2026년 2월 예보 기준
         </p>
       </div>
