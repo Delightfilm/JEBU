@@ -80,7 +80,7 @@ const StatusDisplay = ({ isOpen, nextChangeTime }: StatusDisplayProps) => {
       </div>
 
       {/* Countdown */}
-      <div className="card-elevated w-full p-6">
+      <div className="card-elevated mx-auto max-w-sm p-6">
         <p className="mb-3 text-center text-sm font-medium text-muted-foreground">
           {isOpen ? "남은 통행 시간" : "다음 개방까지"}
         </p>

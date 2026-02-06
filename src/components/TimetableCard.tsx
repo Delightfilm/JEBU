@@ -13,12 +13,11 @@ interface TimetableCardProps {
   entries: TimetableEntry[];
 }
 
-const formatTimeRange = (open: string, close: string) =>
-  open === "00:00" && close === "23:59" ? "계속통행" : `${open} ~ ${close}`;
-
 const TimetableCard = ({ entries }: TimetableCardProps) => {
-  const d = new Date();
-  const today = `${d.getMonth() + 1}/${d.getDate()}`;
+  const today = new Date().toLocaleDateString("ko-KR", {
+    month: "numeric",
+    day: "numeric",
+  });
 
   return (
     <div className="card-elevated overflow-hidden">
@@ -47,14 +46,7 @@ const TimetableCard = ({ entries }: TimetableCardProps) => {
               const isToday = entry.date === today;
               const isSat = entry.dayOfWeek === "토";
               const isSun = entry.dayOfWeek === "일";
-              const rowBg =
-                isToday
-                  ? "bg-status-open-light"
-                  : isSun
-                    ? "bg-[#FFEBEB] hover:bg-[#FFE0E0]"
-                    : isSat
-                      ? "bg-[#E8F1FF] hover:bg-[#D6E5FF]"
-                      : "hover:bg-muted/30";
+              const rowBg = isSat ? "bg-blue-100/60" : isSun ? "bg-red-100/60" : isToday ? "bg-status-open-light" : "hover:bg-muted/30";
               return (
                 <tr
                   key={index}
@@ -77,13 +69,13 @@ const TimetableCard = ({ entries }: TimetableCardProps) => {
                   </td>
                   <td className="px-4 py-3">
                     <span className="text-sm">
-                      {formatTimeRange(entry.openTime1, entry.closeTime1)}
+                      {entry.openTime1} ~ {entry.closeTime1}
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     {entry.openTime2 && entry.closeTime2 ? (
                       <span className="text-sm">
-                        {formatTimeRange(entry.openTime2, entry.closeTime2)}
+                        {entry.openTime2} ~ {entry.closeTime2}
                       </span>
                     ) : (
                       <span className="text-sm text-muted-foreground">-</span>

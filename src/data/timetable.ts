@@ -1,4 +1,4 @@
-import timetableJson from "./timetable.json";
+import data from "./timetable.json";
 
 export interface TimetableEntry {
   date: string;
@@ -9,32 +9,81 @@ export interface TimetableEntry {
   closeTime2?: string;
 }
 
-export type MonthlyTimetable = Record<string, TimetableEntry[]>;
+const timetable = data as Record<string, TimetableEntry[]>;
 
-export const monthlyTimetable: MonthlyTimetable = timetableJson as MonthlyTimetable;
-
-function parseTimeHM(s: string): number {
+/** "HH:mm" → 당일 0시 기준 분 */
+function toMinutes(s: string): number {
   const [h, m] = s.split(":").map(Number);
-  return (h ?? 0) * 60 + (m ?? 0);
+  return h * 60 + m;
 }
 
-/** 오늘 날짜의 시간표 항목 반환 */
-export function getTodayEntry(): TimetableEntry | null {
+/** 오늘 날짜 키 (월/일) */
+function todayKey(): string {
+  const now = new Date();
+  return `${now.getMonth() + 1}/${now.getDate()}`;
+}
+
+/** 해당 월의 통행 데이터 배열 (월별 시간표용) */
+export function getMonthEntries(month: number): TimetableEntry[] {
+  const key = String(month);
+  return timetable[key] ?? [];
+}
+
+/** 오늘 하루 통행 엔트리 */
+function getTodayEntry(): TimetableEntry | null {
   const now = new Date();
   const month = now.getMonth() + 1;
   const day = now.getDate();
-  const key = String(month);
-  const list = monthlyTimetable[key];
-  if (!list) return null;
-  return list.find((e) => e.date === `${month}/${day}`) ?? null;
+  const entries = getMonthEntries(month);
+  const entry = entries.find((e) => {
+    const [m, d] = e.date.split("/").map(Number);
+    return m === month && d === day;
+  });
+  return entry ?? null;
 }
 
-/** 현재 시각이 통행 구간 안인지 (다음날 자정 넘는 close는 다음날 새벽으로 간주) */
-function isInRange(nowMins: number, open: string, close: string): boolean {
-  const openMins = parseTimeHM(open);
-  let closeMins = parseTimeHM(close);
-  if (closeMins <= openMins) closeMins += 24 * 60;
-  return nowMins >= openMins && nowMins < closeMins;
+/** 한 구간이 자정을 넘는지 (close < open 이면 다음날) */
+function isOvernight(openMin: number, closeMin: number): boolean {
+  return closeMin <= openMin;
+}
+
+/** 현재 시각이 [open, close) 구간 안에 있는지 (자정 넘김 처리) */
+function isInInterval(nowMin: number, openMin: number, closeMin: number): boolean {
+  if (isOvernight(openMin, closeMin)) {
+    return nowMin >= openMin || nowMin < closeMin;
+  }
+  return nowMin >= openMin && nowMin < closeMin;
+}
+
+/** 분 → 오늘 자정 기준 Date (다음날이면 +1일) */
+function toDateToday(now: Date, minutes: number): Date {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  if (minutes >= 24 * 60) {
+    d.setDate(d.getDate() + 1);
+    d.setMinutes(minutes - 24 * 60);
+  } else {
+    d.setMinutes(minutes);
+  }
+  return d;
+}
+
+/** 다음 상태 변경 시각 (다음 open 또는 close) */
+function nextChange(nowMin: number, entry: TimetableEntry): Date {
+  const now = new Date();
+  const candidates: Date[] = [];
+  const add = (openMin: number, closeMin: number) => {
+    candidates.push(toDateToday(now, closeMin > openMin ? closeMin : closeMin + 24 * 60));
+    candidates.push(toDateToday(now, openMin));
+  };
+  add(toMinutes(entry.openTime1), toMinutes(entry.closeTime1));
+  if (entry.openTime2 && entry.closeTime2) {
+    add(toMinutes(entry.openTime2), toMinutes(entry.closeTime2));
+  }
+  const next = candidates
+    .filter((d) => d.getTime() > now.getTime())
+    .sort((a, b) => a.getTime() - b.getTime())[0];
+  return next ?? new Date(now.getTime() + 24 * 60 * 60 * 1000);
 }
 
 /** 오늘 시간표 기준 통행 가능 여부와 다음 상태 변경 시각 */
@@ -43,60 +92,56 @@ export function getPassStatus(): {
   nextChangeTime: Date;
 } {
   const now = new Date();
-  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
   const entry = getTodayEntry();
 
   if (!entry) {
-    return { isOpen: false, nextChangeTime: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0) };
+    return {
+      isOpen: false,
+      nextChangeTime: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+    };
   }
 
-  const in1 = isInRange(nowMins, entry.openTime1, entry.closeTime1);
-  const in2 = entry.openTime2 && entry.closeTime2
-    ? isInRange(nowMins, entry.openTime2, entry.closeTime2)
-    : false;
-  const isOpen = in1 || in2;
-
-  const candidates: Date[] = [];
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-
-  function addIfFuture(openStr: string, closeStr: string) {
-    const [oh, om] = openStr.split(":").map(Number);
-    const [ch, cm] = closeStr.split(":").map(Number);
-    let closeDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), ch ?? 0, cm ?? 0, 0);
-    if (closeDate <= now && (ch ?? 0) < 12) {
-      closeDate = new Date(closeDate.getTime() + 24 * 60 * 60 * 1000);
-    }
-    if (closeDate > now) candidates.push(closeDate);
-    const openDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), oh ?? 0, om ?? 0, 0);
-    if (openDate > now) candidates.push(openDate);
+  const open1 = toMinutes(entry.openTime1);
+  const close1 = toMinutes(entry.closeTime1);
+  let isOpen = isInInterval(nowMin, open1, close1);
+  if (entry.openTime2 && entry.closeTime2) {
+    const open2 = toMinutes(entry.openTime2);
+    const close2 = toMinutes(entry.closeTime2);
+    isOpen = isOpen || isInInterval(nowMin, open2, close2);
   }
 
-  addIfFuture(entry.openTime1, entry.closeTime1);
-  if (entry.openTime2 && entry.closeTime2) addIfFuture(entry.openTime2, entry.closeTime2);
-
-  const nextChangeTime = candidates.length > 0
-    ? candidates.sort((a, b) => a.getTime() - b.getTime())[0]
-    : new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
-
-  return { isOpen, nextChangeTime };
+  return {
+    isOpen,
+    nextChangeTime: nextChange(nowMin, entry),
+  };
 }
 
-/** 이번 주(일~토) 시간표 항목 목록 (오늘 기준 앞뒤로 일주일) */
+/** 이번 주(오늘 포함 7일) 통행 시간표 엔트리 */
 export function getWeekEntries(): TimetableEntry[] {
   const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  const entries = getMonthEntries(month);
+  if (!entries.length) return [];
+
+  const dayIndex = entries.findIndex((e) => {
+    const [m, d] = e.date.split("/").map(Number);
+    return m === month && d === day;
+  });
+  if (dayIndex < 0) return [];
+
   const result: TimetableEntry[] = [];
-  const start = new Date(now);
-  start.setDate(now.getDate() - now.getDay());
   for (let i = 0; i < 7; i++) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    const month = d.getMonth() + 1;
-    const day = d.getDate();
-    const key = String(month);
-    const list = monthlyTimetable[key];
-    if (!list) continue;
-    const entry = list.find((e) => e.date === `${month}/${day}`);
-    if (entry) result.push(entry);
+    const idx = dayIndex + i;
+    if (idx < entries.length) {
+      result.push(entries[idx]);
+    } else {
+      const nextMonth = month === 12 ? 1 : month + 1;
+      const nextEntries = getMonthEntries(nextMonth);
+      const j = idx - entries.length;
+      if (j < nextEntries.length) result.push(nextEntries[j]);
+    }
   }
   return result;
 }

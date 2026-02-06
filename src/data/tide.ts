@@ -83,11 +83,11 @@ export function getCurrentTideStatus(): {
     if (prev.type === "고" && next.type === "저") {
       levelPercent = 100 - t * 100;
       const levelCm = high - (high - low) * t;
-      levelLabel = `약 ${Math.floor(levelCm / 100)}m (하강 중)`;
+      levelLabel = `약 ${(levelCm / 100).toFixed(1)}m (하강 중)`;
     } else if (prev.type === "저" && next.type === "고") {
       levelPercent = t * 100;
       const levelCm = low + (high - low) * t;
-      levelLabel = `약 ${Math.floor(levelCm / 100)}m (상승 중)`;
+      levelLabel = `약 ${(levelCm / 100).toFixed(1)}m (상승 중)`;
     }
   }
 

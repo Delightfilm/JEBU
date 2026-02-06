@@ -24,8 +24,8 @@ const formatTimeLabel = (minutes: number) => {
   return "";
 };
 
-/** cm → m 정수 표시 */
-const cmToM = (cm: number) => Math.floor(cm / 100);
+/** cm → m 소수점 한 자리 표시 */
+const cmToM = (cm: number) => (cm / 100).toFixed(1);
 
 /** currentMinutes에 대한 수위 선형 보간 (곡선 위 정확한 Y값) */
 function interpolateLevel(
