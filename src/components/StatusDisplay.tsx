@@ -9,12 +9,13 @@ interface StatusDisplayProps {
 
 const StatusDisplay = ({ isOpen, nextChangeTime }: StatusDisplayProps) => {
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
+  const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      const now = new Date();
-      const diff = nextChangeTime.getTime() - now.getTime();
-      
+      const nowDate = new Date();
+      const diff = nextChangeTime.getTime() - nowDate.getTime();
+
       if (diff <= 0) {
         return { hours: 0, minutes: 0, seconds: 0 };
       }
@@ -27,7 +28,9 @@ const StatusDisplay = ({ isOpen, nextChangeTime }: StatusDisplayProps) => {
     };
 
     setTimeLeft(calculateTimeLeft());
+    setNow(new Date());
     const timer = setInterval(() => {
+      setNow(new Date());
       setTimeLeft(calculateTimeLeft());
     }, 1000);
 
@@ -35,6 +38,9 @@ const StatusDisplay = ({ isOpen, nextChangeTime }: StatusDisplayProps) => {
   }, [nextChangeTime]);
 
   const formatNumber = (num: number) => num.toString().padStart(2, "0");
+  const currentHours = now.getHours();
+  const currentMinutes = now.getMinutes();
+  const currentSeconds = now.getSeconds();
 
   return (
     <div className="w-full animate-fade-in">
@@ -79,25 +85,51 @@ const StatusDisplay = ({ isOpen, nextChangeTime }: StatusDisplayProps) => {
         </p>
       </div>
 
-      {/* Countdown */}
-      <div className="card-elevated mx-auto max-w-sm p-6">
-        <p className="mb-3 text-center text-sm font-medium text-muted-foreground">
-          {isOpen ? "남은 통행 시간" : "다음 개방까지"}
-        </p>
-        <div className="flex items-center justify-center gap-2">
-          <div className="text-center">
-            <div className="countdown-digit">{formatNumber(timeLeft.hours)}</div>
-            <span className="mt-1 block text-xs text-muted-foreground">시간</span>
+      {/* 현재 시간 & 남은 통행 시간 */}
+      <div className="mx-auto flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-stretch">
+        {/* 좌측: 현재 시간 */}
+        <div className="card-elevated flex flex-1 flex-col p-6">
+          <p className="mb-3 text-center text-sm font-medium text-muted-foreground">
+            현재 시간
+          </p>
+          <div className="flex items-center justify-center gap-2">
+            <div className="text-center">
+              <div className="countdown-digit">{formatNumber(currentHours)}</div>
+              <span className="mt-1 block text-xs text-muted-foreground">시</span>
+            </div>
+            <span className="text-2xl font-bold text-muted-foreground">:</span>
+            <div className="text-center">
+              <div className="countdown-digit">{formatNumber(currentMinutes)}</div>
+              <span className="mt-1 block text-xs text-muted-foreground">분</span>
+            </div>
+            <span className="text-2xl font-bold text-muted-foreground">:</span>
+            <div className="text-center">
+              <div className="countdown-digit">{formatNumber(currentSeconds)}</div>
+              <span className="mt-1 block text-xs text-muted-foreground">초</span>
+            </div>
           </div>
-          <span className="text-2xl font-bold text-muted-foreground">:</span>
-          <div className="text-center">
-            <div className="countdown-digit">{formatNumber(timeLeft.minutes)}</div>
-            <span className="mt-1 block text-xs text-muted-foreground">분</span>
-          </div>
-          <span className="text-2xl font-bold text-muted-foreground">:</span>
-          <div className="text-center">
-            <div className="countdown-digit">{formatNumber(timeLeft.seconds)}</div>
-            <span className="mt-1 block text-xs text-muted-foreground">초</span>
+        </div>
+
+        {/* 우측: 남은 통행 시간 */}
+        <div className="card-elevated flex flex-1 flex-col p-6">
+          <p className="mb-3 text-center text-sm font-medium text-muted-foreground">
+            {isOpen ? "남은 통행 시간" : "다음 개방까지"}
+          </p>
+          <div className="flex items-center justify-center gap-2">
+            <div className="text-center">
+              <div className="countdown-digit">{formatNumber(timeLeft.hours)}</div>
+              <span className="mt-1 block text-xs text-muted-foreground">시간</span>
+            </div>
+            <span className="text-2xl font-bold text-muted-foreground">:</span>
+            <div className="text-center">
+              <div className="countdown-digit">{formatNumber(timeLeft.minutes)}</div>
+              <span className="mt-1 block text-xs text-muted-foreground">분</span>
+            </div>
+            <span className="text-2xl font-bold text-muted-foreground">:</span>
+            <div className="text-center">
+              <div className="countdown-digit">{formatNumber(timeLeft.seconds)}</div>
+              <span className="mt-1 block text-xs text-muted-foreground">초</span>
+            </div>
           </div>
         </div>
       </div>

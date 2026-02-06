@@ -15,6 +15,7 @@ import {
   getCurrentTideStatus,
   getTimeUntilNextTide,
 } from "@/data/tide";
+import { getTodayPassableSegments } from "@/data/timetable";
 
 const formatTimeLabel = (minutes: number) => {
   if (minutes === 0) return "오전 12시";
@@ -98,6 +99,26 @@ const TideLevelGraph = () => {
 
   /** 30분 단위에 가장 가까운 minutes (툴팁 스냅용) */
   const snapTo30 = (minutes: number) => Math.round(minutes / 30) * 30;
+
+  /** 통행 가능/불가 타임라인 구간 (0~1440분 기준) */
+  const timelineSegments = (() => {
+    const total = 24 * 60;
+    const passable = getTodayPassableSegments();
+    if (passable.length === 0) {
+      return [{ start: 0, end: total, type: "impassable" as const }];
+    }
+    const segs: { start: number; end: number; type: "passable" | "impassable" }[] = [];
+    let pos = 0;
+    for (const p of passable) {
+      if (pos < p.start) {
+        segs.push({ start: pos, end: p.start, type: "impassable" });
+      }
+      segs.push({ start: p.start, end: p.end, type: "passable" });
+      pos = p.end;
+    }
+    if (pos < total) segs.push({ start: pos, end: total, type: "impassable" });
+    return segs;
+  })();
 
   return (
     <div
@@ -241,7 +262,68 @@ const TideLevelGraph = () => {
               />
             </AreaChart>
           </ResponsiveContainer>
+
+          {/* 통행 가능/불가 타임라인 (수위 그래프 바로 아래) */}
+          <div className="mt-1">
+            <p className="mb-1 text-[11px] font-medium text-[#1D1D1F]/60">
+              통행시간
+            </p>
+            <div className="relative w-full">
+              <div className="flex h-3 w-full overflow-hidden rounded-lg border border-gray-100 bg-gray-50">
+                {timelineSegments.map((seg, i) => (
+                  <div
+                    key={i}
+                    className="h-full transition-colors"
+                    style={{
+                      width: `${((seg.end - seg.start) / (24 * 60)) * 100}%`,
+                      backgroundColor:
+                        seg.type === "passable"
+                          ? "hsl(var(--status-open))"
+                          : "hsl(var(--status-closed) / 0.5)",
+                    }}
+                    title={
+                      seg.type === "passable"
+                        ? "통행 가능"
+                        : "통행 불가"
+                    }
+                  />
+                ))}
+              </div>
+              {/* 현재 시각 위치 초록 점 */}
+              <span
+                className="absolute top-1/2 z-10 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm"
+                style={{
+                  left: `${(currentMinutes / (24 * 60)) * 100}%`,
+                  backgroundColor: "hsl(var(--status-open))",
+                }}
+                title="현재 시각"
+                aria-hidden
+              />
+            </div>
+            <div className="relative mt-1 h-4 w-full text-[10px] text-[#1D1D1F]/50">
+              <span className="absolute left-[25%] -translate-x-1/2">오전 6시</span>
+              <span className="absolute left-1/2 -translate-x-1/2">오후 12시</span>
+              <span className="absolute left-[75%] -translate-x-1/2">오후 6시</span>
+            </div>
+          </div>
         </div>
+
+        <div className="mt-2 flex gap-4 px-1 text-[10px]">
+            <span className="flex items-center gap-1">
+              <span
+                className="inline-block h-2 w-3 rounded"
+                style={{ backgroundColor: "hsl(var(--status-open))" }}
+              />
+              통행 가능
+            </span>
+            <span className="flex items-center gap-1">
+              <span
+                className="inline-block h-2 w-3 rounded"
+                style={{ backgroundColor: "hsl(var(--status-closed) / 0.5)" }}
+              />
+              통행 불가
+            </span>
+          </div>
       </div>
 
       {/* 푸터 */}

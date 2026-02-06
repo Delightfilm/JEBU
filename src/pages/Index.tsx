@@ -69,6 +69,9 @@ const Index = () => {
             <p className="mt-1 text-xs text-muted-foreground">
               문의: 제부도 관리 사무소 031-355-3924
             </p>
+            <p className="mt-3 text-[11px] text-muted-foreground/80">
+              Copyright © 2022. Delight-Film. All Rights Reserved. / delightfilm0721@gmail.com
+            </p>
           </footer>
         </div>
       </main>

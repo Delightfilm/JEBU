@@ -36,7 +36,7 @@ export function getMonthEntries(month: number): TimetableEntry[] {
 }
 
 /** 오늘 하루 통행 엔트리 */
-function getTodayEntry(): TimetableEntry | null {
+export function getTodayEntry(): TimetableEntry | null {
   const now = new Date();
   const month = now.getMonth() + 1;
   const day = now.getDate();
@@ -46,6 +46,46 @@ function getTodayEntry(): TimetableEntry | null {
     return m === month && d === day;
   });
   return entry ?? null;
+}
+
+/** 당일 0시 기준 분 (HH:mm, 자정 넘기면 +24*60) */
+function toMinutesNormalized(s: string): number {
+  const [h, m] = s.split(":").map(Number);
+  return h * 60 + m;
+}
+
+/**
+ * 오늘 통행 가능 구간을 [startMin, endMin) 형태로 반환 (0~1440 분, 1차+2차 통합).
+ * 자정 넘김 구간은 [open, 1440), [0, close) 두 구간으로 나눔.
+ */
+export function getTodayPassableSegments(): { start: number; end: number }[] {
+  const entry = getTodayEntry();
+  if (!entry) return [];
+  const totalMin = 24 * 60;
+  const segments: { start: number; end: number }[] = [];
+
+  const add = (openStr: string, closeStr: string) => {
+    const open = toMinutesNormalized(openStr);
+    let close = toMinutesNormalized(closeStr);
+    if (close <= open) close += totalMin; // 자정 넘김
+    if (open < totalMin) segments.push({ start: open, end: Math.min(close, totalMin) });
+    if (close > totalMin) segments.push({ start: 0, end: close - totalMin });
+  };
+
+  add(entry.openTime1, entry.closeTime1);
+  if (entry.openTime2 && entry.closeTime2) add(entry.openTime2, entry.closeTime2);
+
+  // 겹치는 구간 합치기 (시작순 정렬 후 병합)
+  segments.sort((a, b) => a.start - b.start);
+  const merged: { start: number; end: number }[] = [];
+  for (const seg of segments) {
+    if (merged.length && seg.start <= merged[merged.length - 1].end) {
+      merged[merged.length - 1].end = Math.max(merged[merged.length - 1].end, seg.end);
+    } else {
+      merged.push({ ...seg });
+    }
+  }
+  return merged;
 }
 
 /** 한 구간이 자정을 넘는지 (close < open 이면 다음날) */

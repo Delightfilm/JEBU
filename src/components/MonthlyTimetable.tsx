@@ -1,9 +1,17 @@
-import { Calendar } from "lucide-react";
+import { useState } from "react";
+import { Calendar, ChevronDown } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { getMonthEntries, formatTimeRange } from "@/data/timetable";
 import type { TimetableEntry } from "@/data/timetable";
+import { cn } from "@/lib/utils";
 
 const MonthlyTimetable = () => {
+  const [open, setOpen] = useState(false);
   const currentMonth = new Date().getMonth() + 1;
   const now = new Date();
   const today = `${now.getMonth() + 1}/${now.getDate()}`;
@@ -25,11 +33,22 @@ const MonthlyTimetable = () => {
 
   return (
     <div className="card-elevated overflow-hidden">
-      <div className="flex items-center gap-2 border-b border-border bg-muted/50 px-4 py-3">
-        <Calendar className="h-5 w-5 text-primary" />
-        <h3 className="font-semibold">월별 통행 시간표</h3>
-      </div>
-
+      <Collapsible open={open} onOpenChange={setOpen} className="w-full">
+        <CollapsibleTrigger asChild>
+          <div className="flex cursor-pointer items-center justify-between gap-2 border-b border-border bg-muted/50 px-4 py-3 transition-colors hover:bg-muted/50">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold">월별 통행 시간표</h3>
+            </div>
+            <ChevronDown
+              className={cn(
+                "h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200",
+                open && "rotate-180"
+              )}
+            />
+          </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
       <Tabs defaultValue={String(currentMonth)} className="w-full">
         <div className="border-b border-border bg-muted/30 px-4 py-2">
           <TabsList className="h-auto flex-wrap gap-1 bg-transparent p-0">
@@ -128,6 +147,8 @@ const MonthlyTimetable = () => {
           ※ 시간은 조석 예보에 따라 변동될 수 있습니다
         </p>
       </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 };

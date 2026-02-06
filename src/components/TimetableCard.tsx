@@ -15,10 +15,8 @@ interface TimetableCardProps {
 }
 
 const TimetableCard = ({ entries }: TimetableCardProps) => {
-  const today = new Date().toLocaleDateString("ko-KR", {
-    month: "numeric",
-    day: "numeric",
-  });
+  const now = new Date();
+  const today = `${now.getMonth() + 1}/${now.getDate()}`;
 
   return (
     <div className="card-elevated overflow-hidden">
@@ -56,7 +54,7 @@ const TimetableCard = ({ entries }: TimetableCardProps) => {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       {isToday && (
-                        <span className="rounded bg-primary px-1.5 py-0.5 text-xs font-medium text-primary-foreground">
+                        <span className="rounded bg-[hsl(var(--status-open))] px-1.5 py-0.5 text-xs font-medium text-white">
                           오늘
                         </span>
                       )}
