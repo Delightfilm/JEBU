@@ -9,6 +9,12 @@ export interface TimetableEntry {
   closeTime2?: string;
 }
 
+/** 00:00~23:59이면 "계속통행", 아니면 "open ~ close" 반환 */
+export function formatTimeRange(open: string, close: string): string {
+  if (open === "00:00" && close === "23:59") return "계속통행";
+  return `${open} ~ ${close}`;
+}
+
 const timetable = data as Record<string, TimetableEntry[]>;
 
 /** "HH:mm" → 당일 0시 기준 분 */

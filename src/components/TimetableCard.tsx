@@ -1,4 +1,5 @@
 import { Calendar } from "lucide-react";
+import { formatTimeRange } from "@/data/timetable";
 
 interface TimetableEntry {
   date: string;
@@ -69,13 +70,13 @@ const TimetableCard = ({ entries }: TimetableCardProps) => {
                   </td>
                   <td className="px-4 py-3">
                     <span className="text-sm">
-                      {entry.openTime1} ~ {entry.closeTime1}
+                      {formatTimeRange(entry.openTime1, entry.closeTime1)}
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     {entry.openTime2 && entry.closeTime2 ? (
                       <span className="text-sm">
-                        {entry.openTime2} ~ {entry.closeTime2}
+                        {formatTimeRange(entry.openTime2, entry.closeTime2)}
                       </span>
                     ) : (
                       <span className="text-sm text-muted-foreground">-</span>

@@ -1,6 +1,6 @@
 import { Calendar } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getMonthEntries } from "@/data/timetable";
+import { getMonthEntries, formatTimeRange } from "@/data/timetable";
 import type { TimetableEntry } from "@/data/timetable";
 
 const MonthlyTimetable = () => {
@@ -93,13 +93,13 @@ const MonthlyTimetable = () => {
                           </td>
                           <td className="px-4 py-3">
                             <span className="text-sm">
-                              {entry.openTime1} ~ {entry.closeTime1}
+                              {formatTimeRange(entry.openTime1, entry.closeTime1)}
                             </span>
                           </td>
                           <td className="px-4 py-3">
                             {entry.openTime2 && entry.closeTime2 ? (
                               <span className="text-sm">
-                                {entry.openTime2} ~ {entry.closeTime2}
+                                {formatTimeRange(entry.openTime2, entry.closeTime2)}
                               </span>
                             ) : (
                               <span className="text-sm text-muted-foreground">-</span>
