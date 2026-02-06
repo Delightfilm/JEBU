@@ -5,7 +5,6 @@ import {
   Area,
   XAxis,
   YAxis,
-  ReferenceLine,
   ResponsiveContainer,
   CartesianGrid,
   Tooltip,
@@ -77,7 +76,6 @@ const TideLevelGraph = () => {
 
   const levelMin = Math.min(...curveData.map((d) => d.level));
   const levelMax = Math.max(...curveData.map((d) => d.level));
-  const levelMid = (levelMin + levelMax) / 2;
   const yDomain = [Math.max(0, levelMin - 50), levelMax + 50];
 
   /** 현재 시각에 대한 선형 보간 수위 */
@@ -203,12 +201,6 @@ const TideLevelGraph = () => {
                 tickLine={false}
               />
               <YAxis domain={yDomain} hide />
-              <ReferenceLine
-                y={levelMid}
-                stroke="#d1d5db"
-                strokeWidth={1}
-                strokeDasharray="4 2"
-              />
               <Tooltip
                 contentStyle={{
                   backgroundColor: "#ffffff",

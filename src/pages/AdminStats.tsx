@@ -4,6 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -62,25 +69,51 @@ function parseUserAgent(ua: string | null): { deviceType: string; os: string } {
   }
 }
 
-async function fetchVisitorLogs(): Promise<VisitorLog[]> {
+/** yearMonth: "YYYY-MM" */
+async function fetchVisitorLogs(yearMonth: string): Promise<VisitorLog[]> {
   if (!supabase) return [];
+  const [y, m] = yearMonth.split("-").map(Number);
+  const start = new Date(y, m - 1, 1);
+  const end = new Date(y, m, 0, 23, 59, 59, 999);
+  const startIso = start.toISOString();
+  const endIso = end.toISOString();
+
   const { data, error } = await supabase
     .from("visitor_logs")
     .select("id, created_at, ip_address, user_agent, path")
-    .order("created_at", { ascending: false })
-    .limit(1000);
+    .gte("created_at", startIso)
+    .lte("created_at", endIso)
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as VisitorLog[];
+}
+
+function getDefaultYearMonth(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+const MONTH_LABELS = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"] as const;
+const MONTH_VALUES = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"] as const;
+
+function getYearOptions(): number[] {
+  const current = new Date().getFullYear();
+  const years: number[] = [];
+  for (let y = current + 1; y >= current - 10; y--) years.push(y);
+  return years;
 }
 
 export default function AdminStats() {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [yearMonth, setYearMonth] = useState(getDefaultYearMonth);
 
   const { data: logs = [], isLoading, error: fetchError } = useQuery({
-    queryKey: ["admin", "visitor_logs"],
-    queryFn: fetchVisitorLogs,
+    queryKey: ["admin", "visitor_logs", yearMonth],
+    queryFn: () => fetchVisitorLogs(yearMonth),
     enabled: authenticated && !!supabase,
   });
 
@@ -180,9 +213,46 @@ export default function AdminStats() {
         )}
 
         <Card>
-          <CardHeader>
-            <CardTitle>방문 로그</CardTitle>
-            <CardDescription>최신순 (최대 1,000건)</CardDescription>
+          <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle>방문 로그</CardTitle>
+              <CardDescription>
+                최신순 · {yearMonth.slice(0, 4)}년 {Number(yearMonth.slice(5))}월 {logs.length}건
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-sm text-muted-foreground whitespace-nowrap">조회 월</Label>
+              <Select
+                value={yearMonth.slice(0, 4)}
+                onValueChange={(y) => setYearMonth(`${y}-${yearMonth.slice(5)}`)}
+              >
+                <SelectTrigger className="w-[88px]">
+                  <SelectValue placeholder="연도" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getYearOptions().map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      {y}년
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={yearMonth.slice(5)}
+                onValueChange={(m) => setYearMonth(`${yearMonth.slice(0, 4)}-${m}`)}
+              >
+                <SelectTrigger className="w-[88px]">
+                  <SelectValue placeholder="월" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTH_VALUES.map((m, i) => (
+                    <SelectItem key={m} value={m}>
+                      {MONTH_LABELS[i]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading && <p className="text-muted-foreground">불러오는 중...</p>}
