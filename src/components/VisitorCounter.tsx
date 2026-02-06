@@ -47,7 +47,7 @@ const VisitorCounter = () => {
   if (counts === null && !error) return null;
 
   return (
-    <div className="rounded-xl border border-[#e0e0e0] bg-white px-4 py-3 shadow-sm">
+    <div className="rounded-xl border border-border bg-card px-4 py-3 shadow-sm">
       <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
         <span className="text-foreground">
           <span className="text-muted-foreground">오늘</span>{" "}
