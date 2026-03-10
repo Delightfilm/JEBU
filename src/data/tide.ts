@@ -1,4 +1,6 @@
 import tideFeb from "./tide-202602.json";
+import tideMar from "./tide-202603.json";
+import tideApr from "./tide-202604.json";
 
 export interface TideEvent {
   time: string;
@@ -12,6 +14,12 @@ export interface TideDay {
 }
 
 const tide202602: TideDay[] = tideFeb as TideDay[];
+const tide202603: TideDay[] = tideMar as TideDay[];
+const tide202604: TideDay[] = tideApr as TideDay[];
+
+const allTideDays: TideDay[] = [...tide202602, ...tide202603, ...tide202604];
+
+const tideByDate = new Map<string, TideDay>(allTideDays.map((d) => [d.date, d]));
 
 function toMinutes(timeStr: string): number {
   const [h, m] = timeStr.split(":").map(Number);
@@ -24,14 +32,30 @@ function todayKey(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/**
+ * 오늘 날짜에 대한 조석 데이터 키.
+ * 데이터가 없는 날짜면, 사용 가능한 날짜 중 가장 가까운 과거(없으면 가장 이른 날짜)로 fallback합니다.
+ */
+function effectiveTideKey(): string {
+  const key = todayKey();
+  if (tideByDate.has(key)) return key;
+
+  const dates = allTideDays.map((d) => d.date).sort();
+  if (dates.length === 0) return key;
+
+  // yyyy-mm-dd 문자열은 사전식 정렬이 날짜 정렬과 동일
+  const pastOrEqual = dates.filter((d) => d <= key);
+  return pastOrEqual[pastOrEqual.length - 1] ?? dates[0];
+}
+
 /** 해당 날짜의 조석 이벤트 (2026년 2월만 데이터 있음) */
 export function getTideForDate(dateKey: string): TideDay | null {
-  return tide202602.find((d) => d.date === dateKey) ?? null;
+  return tideByDate.get(dateKey) ?? null;
 }
 
 /** 오늘 조석 이벤트 (시간순 정렬, 당일+자정 넘는 다음날 첫 이벤트 포함) */
 export function getTodayTideEvents(): TideEvent[] {
-  const key = todayKey();
+  const key = effectiveTideKey();
   const day = getTideForDate(key);
   if (!day || !day.events.length) return [];
   const now = new Date();
@@ -50,7 +74,7 @@ export function getCurrentTideStatus(): {
   prevHigh: TideEvent | null;
   prevLow: TideEvent | null;
 } {
-  const day = getTideForDate(todayKey());
+  const day = getTideForDate(effectiveTideKey());
   if (!day || !day.events.length) {
     return { levelPercent: 50, levelLabel: "데이터 없음", nextHigh: null, nextLow: null, prevHigh: null, prevLow: null };
   }
@@ -106,6 +130,16 @@ export function getTideForecastFebruary(): TideDay[] {
   return tide202602;
 }
 
+/** 2026년 3월 조석 예보 전체 (표용) */
+export function getTideForecastMarch(): TideDay[] {
+  return tide202603;
+}
+
+/** 2026년 4월 조석 예보 전체 (표용) */
+export function getTideForecastApril(): TideDay[] {
+  return tide202604;
+}
+
 /** 24시간 곡선용 데이터 포인트 (만조/간조 기준 보간) */
 export interface TideCurvePoint {
   minutes: number;
@@ -117,7 +151,7 @@ const INTERVAL_MINUTES = 30;
 
 /** 오늘 0시~24시 구간의 수위 곡선 데이터 (그래프용) */
 export function getTideCurveData(): TideCurvePoint[] {
-  const day = getTideForDate(todayKey());
+  const day = getTideForDate(effectiveTideKey());
   if (!day || !day.events.length) {
     return Array.from({ length: 96 + 1 }, (_, i) => ({
       minutes: i * INTERVAL_MINUTES,
