@@ -1,8 +1,5 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -28,8 +25,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { UAParser } from "ua-parser-js";
 import { supabase } from "@/lib/supabase";
-
-const ADMIN_PASSWORD = "rlawnghks0721@";
 
 export type VisitorLog = {
   id: string;
@@ -112,15 +107,12 @@ function getYearOptions(): number[] {
 }
 
 export default function AdminStats() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [yearMonth, setYearMonth] = useState(getDefaultYearMonth);
 
   const { data: logs = [], isLoading, error: fetchError } = useQuery({
     queryKey: ["admin", "visitor_logs", yearMonth],
     queryFn: () => fetchVisitorLogs(yearMonth),
-    enabled: authenticated && !!supabase,
+    enabled: !!supabase,
   });
 
   const dailyData = useMemo(() => {
@@ -167,41 +159,20 @@ export default function AdminStats() {
     return groups;
   }, [logs]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    if (password === ADMIN_PASSWORD) {
-      setAuthenticated(true);
-      setPassword("");
-    } else {
-      setError("비밀번호가 올바르지 않습니다.");
-    }
-  };
-
-  if (!authenticated) {
+  if (!supabase) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>관리자 인증</CardTitle>
-            <CardDescription>방문자 통계를 보려면 비밀번호를 입력하세요.</CardDescription>
+            <CardTitle>방문자 통계</CardTitle>
+            <CardDescription>Supabase 설정이 필요합니다.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="admin-password">비밀번호</Label>
-                <Input
-                  id="admin-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="비밀번호 입력"
-                  autoFocus
-                />
-              </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit">확인</Button>
-            </form>
+            <p className="text-sm text-muted-foreground">
+              환경 변수 <code className="rounded bg-muted px-1">VITE_SUPABASE_URL</code>,{" "}
+              <code className="rounded bg-muted px-1">VITE_SUPABASE_ANON_KEY</code>를 설정한 뒤
+              다시 시도하세요.
+            </p>
           </CardContent>
         </Card>
       </div>
